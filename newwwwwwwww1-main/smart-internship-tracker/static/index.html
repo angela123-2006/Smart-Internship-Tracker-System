@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Smart Internship Tracker — Find and apply to internships, track applications, and get skill-matched recommendations." />
+  <title>Smart Internship Tracker</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════ AUTH SCREEN ═══════════════ -->
+<div id="auth-screen" class="auth-wrapper" style="display:none">
+  <div class="auth-logo">
+    <h1>🎓 Smart Internship Tracker</h1>
+    <p>Find internships. Build your career.</p>
+  </div>
+
+  <div style="background:#fff; border-radius:12px; padding:8px; display:flex; gap:8px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); width:100%; max-width:400px;">
+    <button class="btn btn-primary" style="flex:1" id="btn-role-student" onclick="setAuthRole('student')">Student</button>
+    <button class="btn" style="flex:1; background:transparent; color:#666" id="btn-role-company" onclick="setAuthRole('company')">Employer</button>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login-form" class="auth-card">
+    <h2 id="login-title">Student Sign in</h2>
+    <p class="subtitle" id="login-sub">Stay updated on internship opportunities</p>
+    <div class="form-group">
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" placeholder="email@example.com" />
+    </div>
+    <div class="form-group">
+      <label for="login-password">Password</label>
+      <input type="password" id="login-password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')handleLogin()" />
+    </div>
+    <button class="btn btn-primary btn-block" id="login-btn" onclick="handleLogin()" style="margin-top:8px">Sign in</button>
+    <p class="auth-toggle">New here? <a onclick="showRegisterForm()">Join now</a></p>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="register-form" class="auth-card" style="display:none">
+    <h2 id="reg-title">Join as Student</h2>
+    <p class="subtitle" id="reg-sub">Create your account and start applying</p>
+    
+    <!-- Shared -->
+    <div class="form-group">
+      <label for="reg-email">Email</label>
+      <input type="email" id="reg-email" placeholder="email@example.com" />
+    </div>
+    <div class="form-group">
+      <label for="reg-password">Password (min 6 chars)</label>
+      <input type="password" id="reg-password" placeholder="Create a password" />
+    </div>
+
+    <!-- Student Specific -->
+    <div id="form-student-fields">
+      <div class="form-group">
+        <label for="reg-name">Full Name</label>
+        <input type="text" id="reg-name" placeholder="e.g. Aarav Sharma" />
+      </div>
+      <div class="auth-row">
+        <div class="form-group">
+          <label for="reg-dept">Department</label>
+          <input type="text" id="reg-dept" placeholder="e.g. CS" />
+        </div>
+        <div class="form-group">
+          <label for="reg-cgpa">CGPA</label>
+          <input type="number" id="reg-cgpa" placeholder="8.5" step="0.01" min="0" max="10" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Company Specific -->
+    <div id="form-company-fields" style="display:none">
+      <div class="form-group">
+        <label for="reg-company-name">Company Name</label>
+        <input type="text" id="reg-company-name" placeholder="e.g. TechNova Solutions" />
+      </div>
+      <div class="auth-row">
+        <div class="form-group">
+          <label for="reg-location">Location</label>
+          <input type="text" id="reg-location" placeholder="e.g. Bangalore" />
+        </div>
+        <div class="form-group">
+          <label for="reg-industry">Industry</label>
+          <input type="text" id="reg-industry" placeholder="e.g. Software" />
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-block" id="register-btn" onclick="handleRegister()" style="margin-top:8px">Create Account</button>
+    <p class="auth-toggle">Already have an account? <a onclick="showLoginForm()">Sign in</a></p>
+  </div>
+</div>
+
+<!-- ═══════════════ APP SCREEN ═══════════════ -->
+<div id="app-screen" style="display:none">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-left">
+        <a class="brand" href="#" onclick="showPage('feed');return false">🎓 SIT</a>
+        <div class="topbar-search">
+          <input type="text" placeholder="Search internships..." id="search-input" />
+        </div>
+      </div>
+      <div class="topbar-nav" id="topbar-nav-links">
+        <!-- Injected by JS based on role -->
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-dropdown">
+          <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="toggleDropdown()">
+            <div class="topbar-avatar" id="topbar-initials">?</div>
+            <span style="font-size:13px;font-weight:500" id="topbar-username"></span>
+            <span style="font-size:10px">▼</span>
+          </div>
+          <div class="topbar-dropdown-menu" id="user-dropdown">
+            <div class="dd-item student-only" onclick="showPage('skills');closeDropdown()">⚡ My Skills</div>
+            <div class="dd-item student-only" onclick="showPage('recommend');closeDropdown()">🎯 Recommendations</div>
+            <div class="dd-divider student-only"></div>
+            <div class="dd-item" onclick="handleLogout()">🚪 Sign Out</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REAL-TIME BAR -->
+  <div class="realtime-bar" id="realtime-bar" onclick="this.style.display='none';pageConfig[currentPage].loader()">
+    New updates available — click to refresh
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="app-layout">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar-left">
+      <div class="profile-card">
+        <div class="profile-banner"></div>
+        <div class="profile-info">
+          <div class="profile-avatar" id="profile-initials">?</div>
+          <div class="profile-name" id="profile-name">—</div>
+          <div class="profile-dept" id="profile-sub">—</div>
+        </div>
+        <div class="profile-stats">
+          <div class="profile-stat-row">
+            <span id="stat-label-1">Applications</span>
+            <span class="count" id="profile-stat-count-1">0</span>
+          </div>
+          <div class="profile-stat-row">
+            <span id="stat-label-2">Internships</span>
+            <span class="count" id="profile-stat-count-2">0</span>
+          </div>
+        </div>
+
+        <div id="resume-container" style="display:none; padding:12px; text-align:center; border-top:1px solid #eee; background:#fafafa;">
+          <div id="resume-info" style="font-size:12px; margin-bottom:8px; color:#666">No resume uploaded</div>
+          <input type="file" id="resume-upload" accept=".pdf" style="display:none" onchange="uploadResume(this)" />
+          <button class="btn btn-primary btn-sm btn-block" onclick="document.getElementById('resume-upload').click()">Upload Resume (PDF)</button>
+        </div>
+      </div>
+      <div class="sidebar-nav" id="sidebar-nav-links">
+        <!-- Injected by JS based on role -->
+      </div>
+    </div>
+
+    <!-- MAIN FEED AREA -->
+    <div class="feed">
+
+      <!-- COMMON PAGES -->
+      <div id="page-feed" class="page active">
+        <div id="feed-content">
+          <div class="loading"><div class="spinner"></div><br>Loading feed...</div>
+        </div>
+      </div>
+
+      <div id="page-internships" class="page">
+        <div class="card" style="margin-bottom:8px">
+          <div class="card-header"><h3>💼 Browse Internships</h3></div>
+        </div>
+        <div id="internships-list">
+          <div class="loading"><div class="spinner"></div><br>Loading...</div>
+        </div>
+      </div>
+
+      <div id="page-applications" class="page">
+        <div class="card">
+          <div class="card-header"><h3>📝 My Applications</h3></div>
+          <div class="card-body" id="my-applications-content">
+             <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STUDENT ONLY PAGES -->
+      <div id="page-skills" class="page">
+        <div class="card" style="margin-bottom:8px">
+          <div class="card-header"><h3>⚡ My Skills</h3></div>
+          <div class="card-body" id="skills-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>➕ Add a Skill</h3></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Skill Name</label>
+                <input type="text" id="new-skill-name" placeholder="e.g. Python" />
+              </div>
+              <div class="form-group">
+                <label>Proficiency</label>
+                <select id="new-skill-level">
+                  <option>Beginner</option>
+                  <option>Intermediate</option>
+                  <option>Advanced</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="addMySkill()" style="margin-top:8px">⚡ Add Skill</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-notifications" class="page">
+        <div class="card">
+          <div class="card-header"><h3>🔔 Notifications</h3></div>
+          <div class="card-body" id="notifications-list"></div>
+        </div>
+      </div>
+
+      <div id="page-recommend" class="page">
+        <div class="card" style="margin-bottom:8px">
+          <div class="card-header"><h3>🎯 Recommended For You</h3></div>
+        </div>
+        <div id="recommend-content"></div>
+      </div>
+
+      <!-- EMPLOYER ONLY PAGES -->
+      <div id="page-emp-postings" class="page">
+        <div class="card" style="margin-bottom:8px">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center">
+             <h3 style="margin:0">🏢 My Postings</h3>
+             <button class="btn btn-primary btn-sm" onclick="showCreateInternshipForm()">+ New Posting</button>
+          </div>
+        </div>
+        
+        <div id="create-internship-card" class="card" style="display:none; margin-bottom:8px;">
+          <div class="card-header"><h3>Create Internship</h3></div>
+          <div class="card-body">
+            <div class="form-group">
+               <label>Role</label><input type="text" id="ip-role" placeholder="e.g. Software Engineer Intern">
+            </div>
+            <div class="form-row">
+               <div class="form-group">
+                  <label>Duration</label><input type="text" id="ip-dur" placeholder="e.g. 6 Months">
+               </div>
+               <div class="form-group">
+                  <label>Stipend</label><input type="number" id="ip-stipend" placeholder="e.g. 25000">
+               </div>
+               <div class="form-group">
+                  <label>Deadline</label><input type="date" id="ip-deadline">
+               </div>
+            </div>
+            <div class="form-group">
+               <label>Required Skills (comma separated)</label>
+               <input type="text" id="ip-skills" placeholder="e.g. Python, React, SQL">
+            </div>
+            <div style="display:flex; gap:8px">
+               <button class="btn btn-primary" onclick="createInternship()">Post Internship</button>
+               <button class="btn" onclick="document.getElementById('create-internship-card').style.display='none'">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="emp-postings-list"></div>
+      </div>
+
+      <div id="page-emp-applicants" class="page">
+        <div class="card">
+          <div class="card-header"><h3>📥 Applicants</h3></div>
+          <div class="card-body" id="emp-applicants-list"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div class="sidebar-right">
+      <div class="trending-card">
+        <h4>🔥 Trending</h4>
+        <div class="trending-item">
+          <div class="ti-title">Python</div>
+          <div class="ti-sub">Most in-demand skill</div>
+        </div>
+        <div class="trending-item">
+          <div class="ti-title">React.js</div>
+          <div class="ti-sub">Frontend development</div>
+        </div>
+        <div class="trending-item">
+          <div class="ti-title">AWS / Cloud</div>
+          <div class="ti-sub">Cloud computing</div>
+        </div>
+      </div>
+      <div style="padding:16px;font-size:11px;color:#999;text-align:center">
+        Smart Internship Tracker © 2026<br/>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,451 @@
+{
+  "info": {
+    "name": "Smart Internship Tracker API",
+    "description": "Complete API collection for the Smart Internship Tracker DBMS project. Covers Student & Company auth, internship CRUD, applications, skills, recommendations, and resume upload.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://127.0.0.1:5000"
+    },
+    {
+      "key": "STUDENT_TOKEN",
+      "value": ""
+    },
+    {
+      "key": "COMPANY_TOKEN",
+      "value": ""
+    },
+    {
+      "key": "STUDENT_ID",
+      "value": ""
+    },
+    {
+      "key": "COMPANY_ID",
+      "value": ""
+    },
+    {
+      "key": "INTERNSHIP_ID",
+      "value": ""
+    },
+    {
+      "key": "APPLICATION_ID",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Register Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"student\",\n  \"name\": \"Aarav Sharma\",\n  \"email\": \"aarav@college.edu\",\n  \"password\": \"secure123\",\n  \"department\": \"Computer Science\",\n  \"cgpa\": 8.5\n}"
+            },
+            "url": "http://127.0.0.1:5000/api/auth/register"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "if (res.data) {",
+                  "  pm.collectionVariables.set('STUDENT_TOKEN', res.data.token);",
+                  "  pm.collectionVariables.set('STUDENT_ID', res.data.user_id);",
+                  "}",
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"company\",\n  \"email\": \"hr@technova.com\",\n  \"password\": \"secure123\",\n  \"company_name\": \"TechNova Solutions\",\n  \"location\": \"Bangalore\",\n  \"industry_type\": \"Software\"\n}"
+            },
+            "url": "http://127.0.0.1:5000/api/auth/register"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "if (res.data) {",
+                  "  pm.collectionVariables.set('COMPANY_TOKEN', res.data.token);",
+                  "  pm.collectionVariables.set('COMPANY_ID', res.data.user_id);",
+                  "}",
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"aarav@college.edu\",\n  \"password\": \"secure123\"\n}"
+            },
+            "url": "http://127.0.0.1:5000/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "if (res.data) pm.collectionVariables.set('STUDENT_TOKEN', res.data.token);",
+                  "pm.test('Login OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hr@technova.com\",\n  \"password\": \"secure123\"\n}"
+            },
+            "url": "http://127.0.0.1:5000/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "if (res.data) pm.collectionVariables.set('COMPANY_TOKEN', res.data.token);",
+                  "pm.test('Login OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "url": "http://127.0.0.1:5000/api/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Internships",
+      "item": [
+        {
+          "name": "Create Internship (Company)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{COMPANY_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"Backend Developer Intern\",\n  \"duration\": \"3 Months\",\n  \"stipend\": 15000,\n  \"application_deadline\": \"2027-06-01\",\n  \"required_skills\": \"Python, Flask, SQL\"\n}"
+            },
+            "url": "http://127.0.0.1:5000/api/internships"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "if (res.data) pm.collectionVariables.set('INTERNSHIP_ID', res.data.internship_id);",
+                  "pm.test('Created 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List All Internships",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:5000/api/internships"
+          }
+        },
+        {
+          "name": "Internships by Company",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:5000/api/internships/company/{{COMPANY_ID}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Applications",
+      "item": [
+        {
+          "name": "Apply to Internship (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"internship_id\": 1,\n  \"application_date\": \"2026-03-27\"\n}"
+            },
+            "url": "http://127.0.0.1:5000/api/applications"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "if (res.data) pm.collectionVariables.set('APPLICATION_ID', res.data.application_id);",
+                  "pm.test('Applied 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My Applications (Student)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "url": "http://127.0.0.1:5000/api/applications/student/{{STUDENT_ID}}"
+          }
+        },
+        {
+          "name": "All Applications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "url": "http://127.0.0.1:5000/api/applications"
+          }
+        },
+        {
+          "name": "Update Status (Company)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{COMPANY_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Interview Scheduled\"\n}"
+            },
+            "url": "http://127.0.0.1:5000/api/applications/{{APPLICATION_ID}}/status"
+          }
+        },
+        {
+          "name": "Application Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "url": "http://127.0.0.1:5000/api/applications/statistics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Skills",
+      "item": [
+        {
+          "name": "Add Skill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skill_name\": \"Python\",\n  \"proficiency_level\": \"Advanced\"\n}"
+            },
+            "url": "http://127.0.0.1:5000/api/skills"
+          }
+        },
+        {
+          "name": "My Skills",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "url": "http://127.0.0.1:5000/api/skills/student/{{STUDENT_ID}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Recommendations",
+      "item": [
+        {
+          "name": "Get Recommendations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "url": "http://127.0.0.1:5000/api/internships/recommend/{{STUDENT_ID}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Notifications",
+      "item": [
+        {
+          "name": "My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "url": "http://127.0.0.1:5000/api/notifications/student/{{STUDENT_ID}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Resume Upload",
+      "item": [
+        {
+          "name": "Upload Resume (PDF)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{STUDENT_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "resume",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "http://127.0.0.1:5000/api/students/resume"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Entity Lists",
+      "item": [
+        {
+          "name": "All Students",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:5000/api/students"
+          }
+        },
+        {
+          "name": "All Companies",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:5000/api/companies"
+          }
+        }
+      ]
+    }
+  ]
+}
